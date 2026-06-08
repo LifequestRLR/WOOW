@@ -40,7 +40,7 @@
     border-radius:10px;padding:13px 14px;font-size:16px;font-family:var(--body);outline:none}
   input:focus,select:focus{border-color:var(--accent)}
   .field+.field{margin-top:14px}
-  .row{display:flex;gap:10px}
+  .row{display:flex;gap:10px;align-items:flex-end}
   .row>*{flex:1}
   .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;border:none;border-radius:12px;
     background:var(--accent);color:#fff;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -221,7 +221,7 @@ function showNav(){
 }
 function bar(title){
   $("#bar").innerHTML = me
-    ? `<div class="topbar"><div class="mark">MMA<span>141</span></div>
+    ? `<div class="topbar"><div class="mark">MMA <span>141</span> Hasselt</div>
        <div style="flex:1"></div><span class="pill">${title || ""}</span></div>`
     : "";
 }
@@ -282,7 +282,7 @@ function viewIdentify(mode, prefill){
       <div class="card">
         <div class="row"><div class="field"><label>Voornaam</label>
           <input id="fn" placeholder="Bilal" autocapitalize="words"/></div>
-          <div class="field" style="max-width:120px"><label>1e letter achternaam</label>
+          <div class="field"><label>1e letter achternaam</label>
           <input id="li" maxlength="1" placeholder="L" autocapitalize="characters"/></div></div>
         <div class="field"><label>Geslacht</label>
           <div class="seg" id="sex"><button data-s="M">Man</button><button data-s="F">Vrouw</button></div></div>
@@ -290,11 +290,11 @@ function viewIdentify(mode, prefill){
         <div class="field"><label>Gewicht in kg <span class="muted">— optioneel</span></label>
           <input id="wt" type="number" inputmode="decimal" placeholder="bv. 78"/>
           <div class="hint">Wordt nooit getoond. Bepaalt enkel je klasse-label.</div></div>
-        <div class="row"><div class="field"><label>Pincode (4 cijfers)</label>
+        <div class="row"><div class="field"><label>Pincode</label>
           <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"/></div>
-          <div class="field"><label>Herhaal pincode</label>
+          <div class="field"><label>Herhaal</label>
           <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••"/></div></div>
-        <div class="hint">Je pincode is alleen nodig als je je later op een nieuw toestel aanmeldt.</div>
+        <div class="hint">4 cijfers. Je pincode is alleen nodig als je je later op een nieuw toestel aanmeldt.</div>
         <div class="err" id="e"></div><div style="height:12px"></div>
         <button class="btn" id="reg">Registreren</button>
       </div></div>`);
