@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0c0c0e" />
+<title>WOOW — MMA 141</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0c0c0e; --surface:#161619; --surface2:#1e1e22; --line:#2c2c32;
+    --text:#f4f4f3; --muted:#94949b; --accent:#e4322b; --accent-d:#b3231d; --gold:#f5c33b;
+    --ok:#34c759; --radius:14px;
+    --display:'Anton',sans-serif; --body:'Archivo',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.5}
+  body{padding-bottom:88px;min-height:100vh}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  h1,h2,h3{margin:0;font-weight:600}
+  .display{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.02em;line-height:.95}
+  a{color:var(--accent)}
+  button{font-family:var(--body);cursor:pointer}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 16px}
+  .topbar{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,var(--bg) 70%,transparent);padding:14px 16px 10px;max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  .topbar .mark{font-family:var(--display);font-size:20px;letter-spacing:.04em}
+  .topbar .mark span{color:var(--accent)}
+  .pill{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.red{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pill.amrap{background:#221016;border-color:#5a1f28;color:#ff8a9a}
+  .pill.time{background:#0f1c22;border-color:#1f4654;color:#7fd6ec}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card+.card{margin-top:14px}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px;font-weight:600}
+  input,select{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:13px 14px;font-size:16px;font-family:var(--body);outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  .field+.field{margin-top:14px}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;border:none;border-radius:12px;
+    background:var(--accent);color:#fff;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .btn:active{background:var(--accent-d)}
+  .btn[disabled]{opacity:.4}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.dark{background:var(--surface2);color:var(--text)}
+  .btn.sm{min-height:44px;font-size:14px}
+  .seg{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{flex:1;border:none;background:transparent;color:var(--muted);padding:12px;font-weight:600;font-size:14px}
+  .seg button.on{background:var(--accent);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:999px;
+    padding:8px 13px;font-size:13px;font-weight:600}
+  .chip.on{background:var(--text);color:#111;border-color:var(--text)}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .err{color:#ff7a7a;font-size:14px;margin-top:10px;min-height:1px}
+  .center{text-align:center}
+  .timer{font-family:var(--display);font-size:64px;letter-spacing:.01em;text-align:center;margin:8px 0}
+  .timer.live{color:var(--accent)}
+  /* leaderboard */
+  .lbrow{display:flex;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
+  .lbrow:last-child{border-bottom:none}
+  .lbrow .rk{font-family:var(--display);font-size:22px;width:34px;text-align:center;color:var(--muted)}
+  .lbrow.r1 .rk{color:var(--gold)} .lbrow.r2 .rk{color:#cfd2d6} .lbrow.r3 .rk{color:#d8915a}
+  .lbrow .who{flex:1;min-width:0}
+  .lbrow .who .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lbrow .who .tg{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .lbrow .sc{font-family:var(--display);font-size:22px;letter-spacing:.01em}
+  .lbrow.me{background:#15130f;border-radius:10px;border-bottom:1px solid var(--line)}
+  .lbrow.me .nm::after{content:" · jij";color:var(--accent);font-weight:700}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;max-width:560px;margin:0 auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+  nav button{flex:1;background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0}
+  nav button.on{color:var(--text)}
+  nav .ic{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+  nav button.on .ic{stroke:var(--accent)}
+  .hero{padding:42px 0 10px;text-align:center}
+  .hero .k{font-family:var(--display);font-size:13px;letter-spacing:.35em;color:var(--accent);text-transform:uppercase}
+  .hero h1{font-family:var(--display);font-size:46px;margin:6px 0 2px;text-transform:uppercase}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:104px;z-index:60;background:var(--text);color:#111;
+    padding:11px 18px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s,transform .2s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+  .toast.bad{background:var(--accent);color:#fff}
+  .empty{text-align:center;color:var(--muted);padding:40px 10px}
+  .divider{height:1px;background:var(--line);margin:16px 0}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<main id="app"></main>
+<nav id="nav" style="display:none"></nav>
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG — set this to your deployed Worker URL, no trailing slash.
+   e.g. "https://wotw-api.bilal.workers.dev"
+   ============================================================ */
+const API_BASE = "https://woow-api.YOUR-SUBDOMAIN.workers.dev";
+
+/* ---- Dutch strings & label maps ---- */
+const SEX = { M: "Man", F: "Vrouw" };
+const AGE = { youngsters: "Jeugd", adults: "Volwassenen", veterans: "Veteranen" };
+const WCLASS = { lightweight: "Lightweight", middleweight: "Middleweight", heavyweight: "Heavyweight" };
+const WCLASS_ORDER = ["lightweight", "middleweight", "heavyweight"];
+const ERR = {
+  bad_club_code: "Foute clubcode.",
+  bad_name: "Vul je voornaam en eerste letter van je achternaam in.",
+  name_taken: "Die naam bestaat al.",
+  bad_sex: "Kies een geslacht.",
+  bad_dob: "Vul een geldige geboortedatum in.",
+  bad_pin: "Pincode moet 4 cijfers zijn (of foute pincode).",
+  bad_weight: "Ongeldig gewicht.",
+  bad_credentials: "Controleer je gegevens.",
+  no_such_member: "Lid niet gevonden.",
+  locked: "Te veel pogingen. Probeer over enkele minuten opnieuw.",
+  bad_admin_code: "Foute admincode.",
+  bad_workout: "Workout onvolledig.",
+  bad_duration: "Vul een geldige duur in.",
+  not_started: "Je moet eerst starten.",
+  too_early: "De tijd is nog niet om — je kan nog niet inzenden.",
+  unauthorized: "Je bent niet (meer) ingelogd.",
+  server_error: "Er ging iets mis. Probeer opnieuw.",
+  network: "Geen verbinding met de server.",
+};
+
+/* ---- State & storage ---- */
+const store = {
+  get t(){ return localStorage.getItem("wotw_token"); },
+  set t(v){ v ? localStorage.setItem("wotw_token", v) : localStorage.removeItem("wotw_token"); },
+  get club(){ return localStorage.getItem("wotw_club") || ""; },
+  set club(v){ v ? localStorage.setItem("wotw_club", v) : localStorage.removeItem("wotw_club"); },
+  get admin(){ return localStorage.getItem("wotw_admin") || ""; },
+  set admin(v){ v ? localStorage.setItem("wotw_admin", v) : localStorage.removeItem("wotw_admin"); },
+};
+let me = null;        // logged-in member
+let view = "home";    // current nav view
+let timer = null;     // active stopwatch/countdown handle
+
+/* ---- API wrapper ---- */
+async function api(path, opts = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (opts.club) headers["X-Club-Code"] = store.club;
+  if (opts.auth !== false && store.t) headers["Authorization"] = "Bearer " + store.t;
+  let res;
+  try {
+    res = await fetch(API_BASE + path, {
+      method: opts.method || "GET",
+      headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch (e) {
+    throw { code: "network", status: 0 };
+  }
+  let data = {};
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok) throw { code: data.error || "server_error", status: res.status, data };
+  return data;
+}
+function msg(code){ return ERR[code] || ERR.server_error; }
+
+/* ---- UI helpers ---- */
+const $ = (s, r = document) => r.querySelector(s);
+function setHTML(node, html){ node.innerHTML = html; }
+function toast(text, bad){
+  const t = $("#toast"); t.textContent = text;
+  t.className = "toast show" + (bad ? " bad" : "");
+  clearTimeout(toast._h); toast._h = setTimeout(() => (t.className = "toast"), 2200);
+}
+function fmtScore(score, type){
+  if (type === "amrap") return Math.round(score) + " reps";
+  return fmtTime(score);
+}
+function fmtTime(sec){
+  sec = Math.max(0, Number(sec));
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  const cs = Math.floor((sec - Math.floor(sec)) * 100);
+  return m + ":" + String(s).padStart(2, "0") + "." + String(cs).padStart(2, "0");
+}
+function fmtClock(sec){
+  sec = Math.max(0, Math.ceil(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m + ":" + String(s).padStart(2, "0");
+}
+function fmtDate(ms){
+  return new Date(ms).toLocaleString("nl-BE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function ageFromDob(dob){
+  const d = new Date(dob + "T00:00:00"); const t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const mo = t.getMonth() - d.getMonth();
+  if (mo < 0 || (mo === 0 && t.getDate() < d.getDate())) a--;
+  return a;
+}
+function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+function showNav(){
+  const n = $("#nav"); n.style.display = me ? "flex" : "none";
+  if (!me) return;
+  const items = [
+    ["home", "Workout", "M6.5 12 12 6l5.5 6M6.5 12V20h11v-8"],
+    ["board", "Klassement", "M4 20V9m5 11V4m5 16v-7m5 7V11"],
+    ["profile", "Profiel", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"],
+    ["admin", "Beheer", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-3a7 7 0 0 1-.1 1l2 1.5-2 3.5-2.4-1a7 7 0 0 1-1.7 1l-.4 2.5h-4l-.4-2.5a7 7 0 0 1-1.7-1l-2.4 1-2-3.5L5.1 13a7 7 0 0 1 0-2L3 9.5l2-3.5 2.4 1a7 7 0 0 1 1.7-1L9.5 3.5h4l.4 2.5a7 7 0 0 1 1.7 1l2.4-1 2 3.5L19 11a7 7 0 0 1 0 1Z"],
+  ];
+  n.innerHTML = items.map(([k, lbl, d]) =>
+    `<button data-v="${k}" class="${view === k ? "on" : ""}">
+       <svg class="ic" viewBox="0 0 24 24"><path d="${d}"/></svg>${lbl}</button>`).join("");
+  n.querySelectorAll("button").forEach(b => b.onclick = () => go(b.dataset.v));
+}
+function bar(title){
+  $("#bar").innerHTML = me
+    ? `<div class="topbar"><div class="mark">MMA<span>141</span></div>
+       <div style="flex:1"></div><span class="pill">${title || ""}</span></div>`
+    : "";
+}
+
+function go(v){ stopTimer(); view = v; render(); }
+
+function render(){
+  const app = $("#app");
+  showNav();
+  if (!me){ bar(); return; }
+  bar({ home: "Workout v/d week", board: "Klassement", profile: "Profiel", admin: "Beheer" }[view]);
+  if (view === "home") return viewHome(app);
+  if (view === "board") return viewBoard(app);
+  if (view === "profile") return viewProfile(app);
+  if (view === "admin") return viewAdmin(app);
+}
+
+/* ---------- GATE (club code) ---------- */
+function viewGate(){
+  me = null; showNav(); bar();
+  setHTML($("#app"), `
+    <div class="wrap">
+      <div class="hero"><div class="k">MMA 141 · Hasselt</div>
+        <h1 style="font-size:66px;letter-spacing:.04em">WOOW</h1>
+        <div style="font-family:var(--display);font-size:15px;letter-spacing:.16em;text-transform:uppercase;margin-top:2px">
+          <span style="color:var(--accent)">W</span>ork <span style="color:var(--accent)">O</span>ut <span style="color:var(--accent)">O</span>f the <span style="color:var(--accent)">W</span>eek</div>
+        <p class="muted" style="margin-top:16px">Geef de clubcode in om binnen te komen.</p></div>
+      <div class="card">
+        <div class="field"><label>Clubcode</label>
+          <input id="club" type="text" autocapitalize="characters" placeholder="Clubcode" /></div>
+        <div class="err" id="e"></div>
+        <div style="height:12px"></div>
+        <button class="btn" id="go">Doorgaan</button>
+      </div>
+    </div>`);
+  const submit = async () => {
+    const v = $("#club").value.trim();
+    if (!v) return;
+    store.club = v;
+    try { await api("/api/club", { method: "POST", auth: false, body: { clubCode: v } }); viewIdentify("register"); }
+    catch (e){ store.club = ""; $("#e").textContent = msg(e.code); }
+  };
+  $("#go").onclick = submit;
+  $("#club").addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+}
+
+/* ---------- IDENTIFY (register / login) ---------- */
+function viewIdentify(mode, prefill){
+  me = null; showNav(); bar();
+  const tabs = `
+    <div class="seg" style="margin-bottom:16px">
+      <button id="tReg" class="${mode === "register" ? "on" : ""}">Nieuw hier</button>
+      <button id="tLog" class="${mode === "login" ? "on" : ""}">Inloggen</button>
+    </div>`;
+  if (mode === "register"){
+    setHTML($("#app"), `<div class="wrap"><div class="hero" style="padding-top:30px">
+        <h1 style="font-size:34px">Maak je<br>profiel aan</h1></div>${tabs}
+      <div class="card">
+        <div class="row"><div class="field"><label>Voornaam</label>
+          <input id="fn" placeholder="Bilal" autocapitalize="words"/></div>
+          <div class="field" style="max-width:120px"><label>1e letter achternaam</label>
+          <input id="li" maxlength="1" placeholder="L" autocapitalize="characters"/></div></div>
+        <div class="field"><label>Geslacht</label>
+          <div class="seg" id="sex"><button data-s="M">Man</button><button data-s="F">Vrouw</button></div></div>
+        <div class="field"><label>Geboortedatum</label><input id="dob" type="date"/></div>
+        <div class="field"><label>Gewicht in kg <span class="muted">— optioneel</span></label>
+          <input id="wt" type="number" inputmode="decimal" placeholder="bv. 78"/>
+          <div class="hint">Wordt nooit getoond. Bepaalt enkel je klasse-label.</div></div>
+        <div class="row"><div class="field"><label>Pincode (4 cijfers)</label>
+          <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"/></div>
+          <div class="field"><label>Herhaal pincode</label>
+          <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••"/></div></div>
+        <div class="hint">Je pincode is alleen nodig als je je later op een nieuw toestel aanmeldt.</div>
+        <div class="err" id="e"></div><div style="height:12px"></div>
+        <button class="btn" id="reg">Registreren</button>
+      </div></div>`);
+    let sex = "";
+    $("#sex").querySelectorAll("button").forEach(b => b.onclick = () => {
+      sex = b.dataset.s; $("#sex").querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+    });
+    $("#reg").onclick = async () => {
+      const e = $("#e"); e.textContent = "";
+      const pin = $("#pin").value, pin2 = $("#pin2").value;
+      if (!/^[0-9]{4}$/.test(pin)) return e.textContent = ERR.bad_pin;
+      if (pin !== pin2) return e.textContent = "De pincodes komen niet overeen.";
+      const body = { clubCode: store.club, firstName: $("#fn").value, lastInitial: $("#li").value,
+        sex, dob: $("#dob").value, pin };
+      const w = $("#wt").value.trim(); if (w) body.weightKg = w;
+      try {
+        const r = await api("/api/register", { method: "POST", auth: false, body });
+        store.t = r.token; me = r.member; go("home"); toast("Welkom, " + me.name_label);
+      } catch (err){
+        if (err.code === "name_taken"){
+          e.innerHTML = `Die naam bestaat al — ben jij dit? `+
+            `<a id="isme" href="#">Ja, inloggen</a>`;
+          $("#isme").onclick = ev => { ev.preventDefault(); viewIdentify("login", { id: err.data.memberId, name: err.data.nameLabel }); };
+        } else e.textContent = msg(err.code);
+      }
+    };
+  } else {
+    setHTML($("#app"), `<div class="wrap"><div class="hero" style="padding-top:30px">
+        <h1 style="font-size:34px">Inloggen</h1>
+        <p class="muted">Op een nieuw toestel? Kies je naam en geef je pincode.</p></div>${tabs}
+      <div class="card">
+        <div class="field"><label>Naam</label><select id="who"><option value="">Laden…</option></select></div>
+        <div class="field"><label>Pincode</label>
+          <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"/></div>
+        <div class="err" id="e"></div><div style="height:12px"></div>
+        <button class="btn" id="log">Inloggen</button>
+      </div></div>`);
+    api("/api/members", { club: true, auth: false }).then(r => {
+      const sel = $("#who");
+      sel.innerHTML = `<option value="">— kies je naam —</option>` +
+        r.members.map(m => `<option value="${m.id}">${m.name_label}</option>`).join("");
+      if (prefill) sel.value = prefill.id;
+    }).catch(() => { $("#who").innerHTML = `<option value="">Kon namen niet laden</option>`; });
+    $("#log").onclick = async () => {
+      const e = $("#e"); e.textContent = "";
+      const memberId = $("#who").value, pin = $("#pin").value;
+      if (!memberId) return e.textContent = "Kies je naam.";
+      if (!/^[0-9]{4}$/.test(pin)) return e.textContent = ERR.bad_pin;
+      try {
+        const r = await api("/api/login", { method: "POST", auth: false, body: { clubCode: store.club, memberId, pin } });
+        store.t = r.token; me = r.member; go("home"); toast("Welkom terug");
+      } catch (err){ e.textContent = msg(err.code); }
+    };
+  }
+  $("#tReg").onclick = () => viewIdentify("register");
+  $("#tLog").onclick = () => viewIdentify("login", prefill);
+}
+
+/* ---------- HOME (workout + logging) ---------- */
+async function viewHome(app){
+  setHTML(app, `<div class="wrap"><div class="empty">Laden…</div></div>`);
+  let data;
+  try { data = await api("/api/workouts/current"); }
+  catch (e){ if (e.code === "unauthorized") return logoutLocal(); return setHTML(app, `<div class="wrap"><div class="empty">${msg(e.code)}</div></div>`); }
+  const w = data.workout;
+  if (!w) return setHTML(app, `<div class="wrap"><div class="card center">
+      <h2 class="display" style="font-size:26px">Nog geen workout</h2>
+      <p class="muted">Er is deze week nog geen workout geplaatst.</p></div></div>`);
+
+  const typePill = w.scoring_type === "amrap"
+    ? `<span class="pill amrap">AMRAP · ${Math.round(w.duration_secs/60)} min</span>`
+    : `<span class="pill time">Op tijd</span>`;
+  const mine = data.myResult;
+  const mineHtml = mine ? `<div class="card" style="border-color:#2f3a25;background:#11140d">
+      <div class="muted small">Jouw score</div>
+      <div class="display" style="font-size:30px">${fmtScore(mine.score, w.scoring_type)}</div>
+      <div class="hint">gelogd om ${fmtDate(mine.logged_at)}${mine.updated_at ? " · (aangepast)" : ""}</div></div>` : "";
+
+  setHTML(app, `<div class="wrap">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div class="muted small">Workout van de week</div>${typePill}</div>
+      <h2 class="display" style="font-size:30px;margin:8px 0">${escapeHtml(w.title)}</h2>
+      ${w.description ? `<p style="white-space:pre-wrap;margin:0">${escapeHtml(w.description)}</p>` : ""}
+    </div>
+    ${mineHtml}
+    <div class="card" id="logger"></div>
+    <button class="btn ghost" id="toBoard" style="margin-top:14px">Bekijk klassement</button>
+  </div>`);
+  $("#toBoard").onclick = () => go("board");
+
+  if (w.scoring_type === "for_time") forTimeLogger($("#logger"), w);
+  else amrapLogger($("#logger"), w, data.amrapStart, data.serverNow);
+}
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c])); }
+
+function forTimeLogger(box, w){
+  let running = false, startT = 0, elapsed = 0;
+  box.innerHTML = `<div class="muted small center">Tik start, doe de workout, tik stop.</div>
+    <div class="timer" id="disp">0:00.00</div>
+    <div class="row"><button class="btn" id="se">Start</button>
+      <button class="btn dark" id="submit" style="display:none">Verzend tijd</button></div>
+    <button class="btn ghost sm" id="reset" style="margin-top:10px;display:none">Reset</button>`;
+  const disp = $("#disp", box), se = $("#se", box), sub = $("#submit", box), reset = $("#reset", box);
+  const tick = () => { elapsed = (performance.now() - startT) / 1000; disp.textContent = fmtTime(elapsed); };
+  se.onclick = () => {
+    if (!running){ running = true; startT = performance.now(); disp.classList.add("live");
+      timer = setInterval(tick, 50); se.textContent = "Stop"; se.className = "btn dark"; sub.style.display = "none"; reset.style.display = "none"; }
+    else { running = false; stopTimer(); disp.classList.remove("live"); tick();
+      se.style.display = "none"; sub.style.display = "flex"; reset.style.display = "block"; }
+  };
+  reset.onclick = () => { elapsed = 0; disp.textContent = "0:00.00"; se.style.display = "flex"; se.textContent = "Start"; se.className = "btn"; sub.style.display = "none"; reset.style.display = "none"; };
+  sub.onclick = async () => {
+    sub.disabled = true;
+    try { await api("/api/results", { method: "POST", body: { workoutId: w.id, score: Math.round(elapsed * 100) / 100 } });
+      toast("Tijd verzonden ✓"); go("home"); }
+    catch (e){ sub.disabled = false; toast(msg(e.code), true); }
+  };
+}
+
+function amrapLogger(box, w, startedAt, serverNow){
+  const dur = w.duration_secs;
+  let remaining = dur, done = false;
+  if (startedAt){ remaining = dur - (serverNow - startedAt) / 1000; if (remaining <= 0){ remaining = 0; done = true; } }
+
+  function paintIdle(){
+    box.innerHTML = `<div class="muted small center">${Math.round(dur/60)} minuten AMRAP. De klok loopt op de server — je kan pas inzenden als de tijd om is.</div>
+      <div class="timer" id="disp">${fmtClock(dur)}</div>
+      <button class="btn" id="start">Start AMRAP</button>`;
+    $("#start", box).onclick = async () => {
+      try { const r = await api("/api/results/start", { method: "POST", body: { workoutId: w.id } });
+        runCountdown(r.durationSecs); }
+      catch (e){ toast(msg(e.code), true); }
+    };
+  }
+  function runCountdown(left){
+    box.innerHTML = `<div class="muted small center">Ga ervoor — tel je herhalingen.</div>
+      <div class="timer live" id="disp">${fmtClock(left)}</div>
+      <div class="muted small center">Inzenden kan zodra de klok op 0 staat.</div>`;
+    const disp = $("#disp", box);
+    const end = performance.now() + left * 1000;
+    timer = setInterval(() => {
+      const r = (end - performance.now()) / 1000;
+      if (r <= 0){ stopTimer(); disp.textContent = "0:00"; paintSubmit(); }
+      else disp.textContent = fmtClock(r);
+    }, 200);
+  }
+  function paintSubmit(){
+    box.innerHTML = `<div class="center"><div class="display" style="font-size:22px;color:var(--ok)">Tijd om!</div></div>
+      <div class="field" style="margin-top:12px"><label>Aantal herhalingen (reps)</label>
+        <input id="reps" type="number" inputmode="numeric" placeholder="bv. 120"/></div>
+      <div class="err" id="e"></div><div style="height:8px"></div>
+      <button class="btn" id="sub">Verzend score</button>`;
+    $("#sub", box).onclick = async () => {
+      const reps = parseInt($("#reps", box).value, 10);
+      if (isNaN(reps) || reps < 0) return $("#e", box).textContent = "Vul je aantal reps in.";
+      try { await api("/api/results", { method: "POST", body: { workoutId: w.id, score: reps } });
+        toast("Score verzonden ✓"); go("home"); }
+      catch (e){ $("#e", box).textContent = msg(e.code); }
+    };
+  }
+  if (done) paintSubmit();
+  else if (startedAt) runCountdown(remaining);
+  else paintIdle();
+}
+
+/* ---------- BOARD (leaderboard + filters) ---------- */
+const filters = { sex: "", age: "", weightClass: "" };
+async function viewBoard(app){
+  setHTML(app, `<div class="wrap"><div class="empty">Laden…</div></div>`);
+  let cur;
+  try { cur = await api("/api/workouts/current"); }
+  catch (e){ if (e.code === "unauthorized") return logoutLocal(); return setHTML(app, `<div class="wrap"><div class="empty">${msg(e.code)}</div></div>`); }
+  if (!cur.workout) return setHTML(app, `<div class="wrap"><div class="empty">Nog geen workout om te ranken.</div></div>`);
+  const w = cur.workout;
+
+  const chip = (group, val, label) =>
+    `<button class="chip ${filters[group] === val ? "on" : ""}" data-g="${group}" data-v="${val}">${label}</button>`;
+  setHTML(app, `<div class="wrap">
+    <div class="hero" style="padding:8px 0 14px"><div class="k">Klassement</div>
+      <h1 style="font-size:30px">${escapeHtml(w.title)}</h1></div>
+    <div class="card" style="padding:14px">
+      <label>Geslacht</label><div class="chips">
+        ${chip("sex","","Iedereen")}${chip("sex","M","Mannen")}${chip("sex","F","Vrouwen")}</div>
+      <div style="height:12px"></div>
+      <label>Leeftijd</label><div class="chips">
+        ${chip("age","","Alle")}${chip("age","youngsters","Jeugd")}${chip("age","adults","Volwassenen")}${chip("age","veterans","Veteranen")}</div>
+      <div style="height:12px"></div>
+      <label>Gewichtsklasse</label><div class="chips">
+        ${chip("weightClass","","Alle")}${WCLASS_ORDER.map(k => chip("weightClass",k,WCLASS[k])).join("")}</div>
+    </div>
+    <div class="card" id="lb" style="padding:8px 14px"><div class="empty">Laden…</div></div>
+  </div>`);
+  app.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    filters[c.dataset.g] = c.dataset.v; viewBoard(app);
+  });
+  loadBoard(w);
+}
+async function loadBoard(w){
+  const qs = new URLSearchParams({ workoutId: w.id });
+  if (filters.sex) qs.set("sex", filters.sex);
+  if (filters.age) qs.set("age", filters.age);
+  if (filters.weightClass) qs.set("weightClass", filters.weightClass);
+  try {
+    const r = await api("/api/leaderboard?" + qs.toString());
+    const box = $("#lb"); if (!box) return;
+    if (!r.rows.length){ box.innerHTML = `<div class="empty">Nog geen scores in deze selectie.</div>`; return; }
+    box.innerHTML = r.rows.map(row => {
+      const tags = [SEX[row.sex], AGE[row.age_bracket], row.weight_class ? WCLASS[row.weight_class] : null]
+        .filter(Boolean).join(" · ");
+      return `<div class="lbrow r${row.rank} ${row.is_me ? "me" : ""}">
+        <div class="rk num">${row.rank}</div>
+        <div class="who"><div class="nm">${escapeHtml(row.name_label)}</div>
+          <div class="tg">${tags}${row.edited ? " · (aangepast)" : ""}</div></div>
+        <div class="sc num">${fmtScore(row.score, w.scoring_type)}</div></div>`;
+    }).join("");
+  } catch (e){ const box = $("#lb"); if (box) box.innerHTML = `<div class="empty">${msg(e.code)}</div>`; }
+}
+
+/* ---------- PROFILE ---------- */
+function viewProfile(app){
+  const age = ageFromDob(me.dob);
+  setHTML(app, `<div class="wrap">
+    <div class="hero" style="padding:14px 0"><h1 style="font-size:34px">${escapeHtml(me.name_label)}</h1>
+      <p class="muted">${SEX[me.sex]} · ${age} jaar</p></div>
+    <div class="card">
+      <div class="field"><label>Gewicht in kg <span class="muted">— optioneel, nooit publiek</span></label>
+        <input id="wt" type="number" inputmode="decimal" value="${me.weight_kg ?? ""}" placeholder="niet ingevuld"/></div>
+      <div style="height:10px"></div>
+      <button class="btn sm" id="saveW">Gewicht opslaan</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">Pincode wijzigen</h3>
+      <div class="row"><div class="field"><label>Huidige pincode</label>
+        <input id="op" type="password" inputmode="numeric" maxlength="4"/></div>
+        <div class="field"><label>Nieuwe pincode</label>
+        <input id="np" type="password" inputmode="numeric" maxlength="4"/></div></div>
+      <div class="err" id="pe"></div><div style="height:8px"></div>
+      <button class="btn dark sm" id="savePin">Pincode opslaan</button>
+    </div>
+    <div class="divider"></div>
+    <button class="btn ghost" id="out">Uitloggen op dit toestel</button>
+    <p class="hint center">Je gegevens (geslacht, geboortedatum, gewicht) staan op de clubserver en worden enkel gebruikt voor de filters. Je gewicht in kg is nooit zichtbaar voor anderen.</p>
+  </div>`);
+  $("#saveW").onclick = async () => {
+    const v = $("#wt").value.trim();
+    try { const r = await api("/api/me", { method: "PATCH", body: { weightKg: v === "" ? null : v } });
+      me = r.member; toast("Opgeslagen ✓"); }
+    catch (e){ toast(msg(e.code), true); }
+  };
+  $("#savePin").onclick = async () => {
+    const pe = $("#pe"); pe.textContent = "";
+    const op = $("#op").value, np = $("#np").value;
+    if (!/^[0-9]{4}$/.test(np)) return pe.textContent = "Nieuwe pincode = 4 cijfers.";
+    try { await api("/api/me/pin", { method: "PATCH", body: { oldPin: op, newPin: np } });
+      $("#op").value = ""; $("#np").value = ""; toast("Pincode gewijzigd ✓"); }
+    catch (e){ pe.textContent = e.code === "bad_pin" ? "Huidige pincode klopt niet." : msg(e.code); }
+  };
+  $("#out").onclick = async () => {
+    try { await api("/api/logout", { method: "POST" }); } catch (_){}
+    logoutLocal();
+  };
+}
+
+/* ---------- ADMIN (beheer) ---------- */
+async function viewAdmin(app){
+  setHTML(app, `<div class="wrap">
+    <div class="hero" style="padding:14px 0"><h1 style="font-size:32px">Beheer</h1>
+      <p class="muted">Plaats de workout van de week. Admincode vereist.</p></div>
+    <div class="card">
+      <div class="field"><label>Admincode</label>
+        <input id="ac" type="password" value="${store.admin}" placeholder="Admincode"/></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">Nieuwe workout</h3>
+      <div class="field"><label>Titel</label><input id="wtitle" placeholder="bv. Fran"/></div>
+      <div class="field"><label>Beschrijving</label>
+        <textarea id="wdesc" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:13px;font-family:var(--body);font-size:16px" placeholder="21-15-9 thrusters & pull-ups…"></textarea></div>
+      <div class="field"><label>Type</label>
+        <div class="seg" id="wtype"><button data-t="for_time" class="on">Op tijd</button><button data-t="amrap">AMRAP</button></div></div>
+      <div class="field" id="durWrap" style="display:none"><label>Duur in minuten</label>
+        <input id="wdur" type="number" inputmode="numeric" placeholder="bv. 12"/></div>
+      <div class="err" id="we"></div><div style="height:8px"></div>
+      <button class="btn" id="post">Plaats workout</button>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">Pincode van lid resetten</h3>
+      <div class="field"><label>Lid</label><select id="rmember"><option value="">Laden…</option></select></div>
+      <div class="field"><label>Nieuwe pincode (4 cijfers)</label>
+        <input id="rpin" type="text" inputmode="numeric" maxlength="4" placeholder="bv. 0000"/></div>
+      <div class="err" id="re"></div><div style="height:8px"></div>
+      <button class="btn dark" id="reset">Reset pincode</button>
+      <p class="hint">Geef de nieuwe pincode door aan het lid; die kan hem daarna zelf wijzigen.</p>
+    </div>
+  </div>`);
+
+  let wtype = "for_time";
+  $("#wtype").querySelectorAll("button").forEach(b => b.onclick = () => {
+    wtype = b.dataset.t; $("#wtype").querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+    $("#durWrap").style.display = wtype === "amrap" ? "block" : "none";
+  });
+  $("#post").onclick = async () => {
+    const we = $("#we"); we.textContent = ""; store.admin = $("#ac").value.trim();
+    const body = { adminCode: store.admin, title: $("#wtitle").value.trim(),
+      description: $("#wdesc").value.trim(), scoring_type: wtype, createdBy: me.name_label };
+    if (!body.title) return we.textContent = "Geef een titel.";
+    if (wtype === "amrap"){ const min = parseFloat($("#wdur").value); if (!min || min <= 0) return we.textContent = ERR.bad_duration;
+      body.duration_secs = Math.round(min * 60); }
+    try { await api("/api/workouts", { method: "POST", body }); toast("Workout geplaatst ✓"); go("home"); }
+    catch (e){ we.textContent = msg(e.code); }
+  };
+
+  api("/api/members", { club: true }).then(r => {
+    $("#rmember").innerHTML = `<option value="">— kies lid —</option>` +
+      r.members.map(m => `<option value="${m.id}">${m.name_label}</option>`).join("");
+  }).catch(() => { $("#rmember").innerHTML = `<option value="">Kon namen niet laden</option>`; });
+  $("#reset").onclick = async () => {
+    const re = $("#re"); re.textContent = ""; store.admin = $("#ac").value.trim();
+    const memberId = $("#rmember").value, newPin = $("#rpin").value;
+    if (!memberId) return re.textContent = "Kies een lid.";
+    if (!/^[0-9]{4}$/.test(newPin)) return re.textContent = "Pincode = 4 cijfers.";
+    try { await api("/api/admin/reset-pin", { method: "POST", body: { adminCode: store.admin, memberId, newPin } });
+      $("#rpin").value = ""; toast("Pincode gereset ✓"); }
+    catch (e){ re.textContent = msg(e.code); }
+  };
+}
+
+/* ---------- session ---------- */
+function logoutLocal(){ store.t = ""; me = null; stopTimer(); view = "home"; viewGate(); }
+
+async function boot(){
+  if (!store.t) return viewGate();
+  try { const r = await api("/api/me"); me = r.member; go("home"); }
+  catch (e){ if (e.code === "network"){ toast(ERR.network, true); return viewGate(); } logoutLocal(); }
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+boot();
+</script>
+</body>
+</html>
