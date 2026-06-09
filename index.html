@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0c0c0e" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <title>WOOW — MMA 141</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
@@ -21,12 +21,8 @@
     --display:'Anton',sans-serif; --body:'Archivo',system-ui,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.5;
-    height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
-  body{position:fixed;top:0;right:0;bottom:0;left:0;height:auto;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-  body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom);background:var(--surface);z-index:39}
-  #bar{flex:0 0 auto}
-  #app{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+  body{min-height:100vh;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
   h1,h2,h3{margin:0;font-weight:600}
   .display{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.02em;line-height:.95}
@@ -81,8 +77,8 @@
   .lbrow .sc{font-family:var(--display);font-size:22px;letter-spacing:.01em}
   .lbrow.me{background:#15130f;border-radius:10px;border-bottom:1px solid var(--line)}
   .lbrow.me .nm::after{content:" · jij";color:var(--accent);font-weight:700}
-  nav{flex:0 0 auto;background:var(--surface);border-top:1px solid var(--line);
-    display:flex;max-width:560px;width:100%;margin:0 auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;max-width:560px;margin:0 auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
   nav button{flex:1;background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;
     display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0}
   nav button.on{color:var(--text)}
@@ -121,7 +117,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.2.2";
+const APP_VERSION = "1.2.3";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
