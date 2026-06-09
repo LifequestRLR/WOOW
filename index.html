@@ -128,7 +128,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.3.2";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -251,8 +251,9 @@ function showNav(){
     ["home", "Workout", "M6.5 12 12 6l5.5 6M6.5 12V20h11v-8"],
     ["board", "Klassement", "M4 20V9m5 11V4m5 16v-7m5 7V11"],
     ["profile", "Profiel", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"],
-    ["admin", "Beheer", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-3a7 7 0 0 1-.1 1l2 1.5-2 3.5-2.4-1a7 7 0 0 1-1.7 1l-.4 2.5h-4l-.4-2.5a7 7 0 0 1-1.7-1l-2.4 1-2-3.5L5.1 13a7 7 0 0 1 0-2L3 9.5l2-3.5 2.4 1a7 7 0 0 1 1.7-1L9.5 3.5h4l.4 2.5a7 7 0 0 1 1.7 1l2.4-1 2 3.5L19 11a7 7 0 0 1 0 1Z"],
   ];
+  if (localStorage.getItem("wotw_admin_unlocked"))
+    items.push(["admin", "Beheer", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-3a7 7 0 0 1-.1 1l2 1.5-2 3.5-2.4-1a7 7 0 0 1-1.7 1l-.4 2.5h-4l-.4-2.5a7 7 0 0 1-1.7-1l-2.4 1-2-3.5L5.1 13a7 7 0 0 1 0-2L3 9.5l2-3.5 2.4 1a7 7 0 0 1 1.7-1L9.5 3.5h4l.4 2.5a7 7 0 0 1 1.7 1l2.4-1 2 3.5L19 11a7 7 0 0 1 0 1Z"]);
   n.innerHTML = items.map(([k, lbl, d]) =>
     `<button data-v="${k}" class="${view === k ? "on" : ""}">
        <svg class="ic" viewBox="0 0 24 24"><path d="${d}"/></svg>${lbl}</button>`).join("");
@@ -602,7 +603,7 @@ function viewProfile(app){
     <div class="divider"></div>
     <button class="btn ghost" id="out">Uitloggen op dit toestel</button>
     <p class="hint center">Je gegevens (geslacht, geboortedatum, gewicht) staan op de clubserver en worden enkel gebruikt voor de filters. Je gewicht in kg is nooit zichtbaar voor anderen.</p>
-    <p class="hint center" style="margin-top:8px;opacity:.55">WOOW v${APP_VERSION}</p>
+    <p class="hint center" id="ver" style="margin-top:8px;opacity:.55">WOOW v${APP_VERSION}</p>
   </div>`);
   $("#saveW").onclick = async () => {
     const v = $("#wt").value.trim();
@@ -621,6 +622,12 @@ function viewProfile(app){
   $("#out").onclick = async () => {
     try { await api("/api/logout", { method: "POST" }); } catch (_){}
     logoutLocal();
+  };
+  let vtaps = 0, vt = null;
+  $("#ver").onclick = () => {
+    if (localStorage.getItem("wotw_admin_unlocked")) return;
+    vtaps++; clearTimeout(vt); vt = setTimeout(() => { vtaps = 0; }, 1500);
+    if (vtaps >= 5){ vtaps = 0; localStorage.setItem("wotw_admin_unlocked", "1"); toast("Beheer ontgrendeld"); go("admin"); }
   };
 }
 
@@ -654,7 +661,11 @@ async function viewAdmin(app){
       <button class="btn dark" id="reset">Reset pincode</button>
       <p class="hint">Geef de nieuwe pincode door aan het lid; die kan hem daarna zelf wijzigen.</p>
     </div>
+    <div class="divider"></div>
+    <button class="btn ghost sm" id="hideAdmin">Beheer verbergen op dit toestel</button>
+    <p class="hint center">Tik 5× op het versienummer (onderaan Profiel) om het terug te tonen.</p>
   </div>`);
+  $("#hideAdmin").onclick = () => { localStorage.removeItem("wotw_admin_unlocked"); toast("Beheer verborgen"); go("home"); };
 
   let wtype = "for_time";
   $("#wtype").querySelectorAll("button").forEach(b => b.onclick = () => {
