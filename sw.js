@@ -1,6 +1,6 @@
-// MMA 141 WOTW — service worker (app-shell cache)
-// Bump CACHE when you change the shell so clients pick up the new version.
-const CACHE = "woow-shell-v8";
+// MMA 141 WOOW — service worker
+// Network-first: laadt altijd de nieuwste versie wanneer online; cache enkel als fallback offline.
+const CACHE = "woow-shell-v9";
 const SHELL = [
   "./",
   "./index.html",
@@ -22,14 +22,14 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
-  // Never cache API calls — leaderboard must always be live.
+  // API-calls nooit cachen — klassement moet live zijn.
   if (req.method !== "GET" || req.url.includes("/api/")) return;
-  // App shell: cache-first, fall back to network.
+  // Network-first: probeer altijd het net, val terug op cache (offline).
   e.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+    fetch(req).then((res) => {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => caches.match(req).then((hit) => hit || caches.match("./index.html")))
   );
 });
