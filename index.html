@@ -135,7 +135,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.4.2";
+const APP_VERSION = "1.5";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -156,6 +156,8 @@ const ERR = {
   bad_admin_code: "Foute admincode.",
   bad_workout: "Workout onvolledig.",
   bad_duration: "Vul een geldige duur in.",
+  bad_exercises: "Voeg minstens één oefening met een geldige tijd toe.",
+  bad_detail: "Vul je reps voor elke oefening in.",
   not_started: "Je moet eerst starten.",
   too_early: "De tijd is nog niet om — je kan nog niet inzenden.",
   unauthorized: "Je bent niet (meer) ingelogd.",
@@ -207,8 +209,8 @@ function toast(text, bad){
   clearTimeout(toast._h); toast._h = setTimeout(() => (t.className = "toast"), 2200);
 }
 function fmtScore(score, type){
-  if (type === "amrap") return Math.round(score) + " reps";
-  return fmtTime(score);
+  if (type === "for_time") return fmtTime(score);
+  return Math.round(score) + " reps";
 }
 function fmtTime(sec){
   sec = Math.max(0, Number(sec));
@@ -411,9 +413,17 @@ async function viewHome(app){
       <h2 class="display" style="font-size:26px">Nog geen workout</h2>
       <p class="muted">Er is deze week nog geen workout geplaatst.</p></div></div>`);
 
-  const typePill = w.scoring_type === "amrap"
-    ? `<span class="pill amrap">AMRAP · ${Math.round(w.duration_secs/60)} min</span>`
-    : `<span class="pill time">Op tijd</span>`;
+  let exs = [];
+  if (w.scoring_type === "amrap_stations" && w.exercises){ try { exs = JSON.parse(w.exercises); } catch (_){} }
+  const durMin = Math.round((w.duration_secs || 0) / 60);
+  const typePill = w.scoring_type === "for_time"
+    ? `<span class="pill time">Op tijd</span>`
+    : w.scoring_type === "amrap_stations"
+      ? `<span class="pill amrap">AMRAP · stations · ${durMin} min</span>`
+      : `<span class="pill amrap">AMRAP · ${durMin} min</span>`;
+  const exHtml = exs.length ? `<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+      ${exs.map((e, i) => `<div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span>${i + 1}. ${escapeHtml(e.name)}</span><span class="muted num">${fmtClock(e.capSecs)}</span></div>`).join("")}</div>` : "";
   const mine = data.myResult;
   const mineHtml = mine ? `<div class="card" style="border-color:#2f3a25;background:#11140d">
       <div class="muted small">Jouw score</div>
@@ -426,6 +436,7 @@ async function viewHome(app){
         <div class="muted small">Workout van de week</div>${typePill}</div>
       <h2 class="display" style="font-size:30px;margin:8px 0">${escapeHtml(w.title)}</h2>
       ${w.description ? `<p style="white-space:pre-wrap;margin:0">${escapeHtml(w.description)}</p>` : ""}
+      ${exHtml}
     </div>
     ${mineHtml}
     <div class="card" id="logger"></div>
@@ -434,6 +445,7 @@ async function viewHome(app){
   $("#toBoard").onclick = () => go("board");
 
   if (w.scoring_type === "for_time") forTimeLogger($("#logger"), w);
+  else if (w.scoring_type === "amrap_stations") stationsLogger($("#logger"), w, data.amrapStart, data.serverNow, exs);
   else amrapLogger($("#logger"), w, data.amrapStart, data.serverNow);
 }
 function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c])); }
@@ -507,6 +519,61 @@ function amrapLogger(box, w, startedAt, serverNow){
   if (done) paintSubmit();
   else if (startedAt) runCountdown(remaining);
   else paintIdle();
+}
+
+function stationsLogger(box, w, startedAt, serverNow, exs){
+  const caps = exs.map(e => e.capSecs);
+  const cum = []; let s = 0; for (const c of caps){ s += c; cum.push(s); }
+  const total = s;
+
+  function paintIdle(){
+    box.innerHTML = `<div class="muted small center">${exs.length} oefeningen, elk met eigen tijd. De app telt elke oefening af; daarna vul je je reps in.</div>
+      <div class="timer" id="disp">${fmtClock(total)}</div>
+      <button class="btn" id="start">Start</button>`;
+    $("#start", box).onclick = () => honesty(w.id, async () => {
+      try { await api("/api/results/start", { method: "POST", body: { workoutId: w.id } }); runSeq(0); }
+      catch (e){ toast(msg(e.code), true); }
+    });
+  }
+  function runSeq(elapsedSec){
+    box.innerHTML = `<div class="muted small center" id="phase"></div>
+      <div class="timer live" id="disp">0:00</div>
+      <div class="muted small center" id="next"></div>`;
+    const disp = $("#disp", box), phase = $("#phase", box), nxt = $("#next", box);
+    const virtualStart = performance.now() - elapsedSec * 1000;
+    stopTimer();
+    timer = setInterval(() => {
+      const el = (performance.now() - virtualStart) / 1000;
+      if (el >= total){ stopTimer(); paintForm(); return; }
+      let i = cum.findIndex(c => el < c); if (i < 0) i = exs.length - 1;
+      phase.innerHTML = `Oefening ${i + 1}/${exs.length} — <strong style="color:var(--text)">${escapeHtml(exs[i].name)}</strong>`;
+      disp.textContent = fmtClock(cum[i] - el);
+      nxt.textContent = (i + 1 < exs.length) ? "Volgende: " + exs[i + 1].name : "Laatste oefening";
+    }, 200);
+  }
+  function paintForm(){
+    box.innerHTML = `<div class="center"><div class="display" style="font-size:22px;color:var(--ok)">Tijd om!</div></div>
+      <div class="muted small center" style="margin:6px 0 10px">Vul je reps per oefening in.</div>
+      ${exs.map((e, i) => `<div class="field"><label>${escapeHtml(e.name)}</label>
+        <input id="rep${i}" type="number" inputmode="numeric" placeholder="reps"/></div>`).join("")}
+      <div class="err" id="e"></div><div style="height:8px"></div>
+      <button class="btn" id="sub">Verzend score</button>`;
+    $("#sub", box).onclick = async () => {
+      const detail = [];
+      for (let i = 0; i < exs.length; i++){
+        const v = parseInt($("#rep" + i, box).value, 10);
+        if (isNaN(v) || v < 0){ $("#e", box).textContent = "Vul alle oefeningen in."; return; }
+        detail.push(v);
+      }
+      try { await api("/api/results", { method: "POST", body: { workoutId: w.id, detail } });
+        toast("Score verzonden ✓"); go("home"); }
+      catch (e){ $("#e", box).textContent = msg(e.code); }
+    };
+  }
+  if (startedAt){
+    const elapsed = (serverNow - startedAt) / 1000;
+    if (elapsed >= total) paintForm(); else runSeq(elapsed);
+  } else paintIdle();
 }
 
 /* ---------- BOARD (leaderboard + filters) ---------- */
@@ -684,9 +751,18 @@ async function viewAdmin(app){
       <div class="field"><label>Beschrijving</label>
         <textarea id="wdesc" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:13px;font-family:var(--body);font-size:16px" placeholder="21-15-9 thrusters & pull-ups…"></textarea></div>
       <div class="field"><label>Type</label>
-        <div class="seg" id="wtype"><button data-t="for_time" class="on">Op tijd</button><button data-t="amrap">AMRAP</button></div></div>
+        <select id="wtype">
+          <option value="for_time">Op tijd</option>
+          <option value="amrap">AMRAP</option>
+          <option value="amrap_stations">AMRAP per oefening</option>
+        </select></div>
       <div class="field" id="durWrap" style="display:none"><label>Duur in minuten</label>
         <input id="wdur" type="number" inputmode="numeric" placeholder="bv. 12"/></div>
+      <div class="field" id="exWrap" style="display:none">
+        <label>Oefeningen (naam + minuten)</label>
+        <div id="exList"></div>
+        <button class="btn dark sm" id="addEx" type="button" style="margin-top:8px">+ Oefening</button>
+        <div class="hint">De tijden samen vormen de totale tijdscap.</div></div>
       <div class="err" id="we"></div><div style="height:8px"></div>
       <button class="btn" id="post">Plaats workout</button>
     </div>
@@ -706,17 +782,40 @@ async function viewAdmin(app){
   $("#hideAdmin").onclick = () => { localStorage.removeItem("wotw_admin_unlocked"); toast("Beheer verborgen"); go("home"); };
 
   let wtype = "for_time";
-  $("#wtype").querySelectorAll("button").forEach(b => b.onclick = () => {
-    wtype = b.dataset.t; $("#wtype").querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  function addExRow(name, min){
+    const r = document.createElement("div");
+    r.className = "exrow"; r.style = "display:flex;gap:8px;margin-top:8px;align-items:center";
+    r.innerHTML = `<input class="exn" placeholder="bv. Push-ups" style="flex:1" value="${name ? escapeHtml(name) : ""}"/>
+      <input class="exm" type="number" inputmode="numeric" placeholder="min" style="width:74px" value="${min || ""}"/>
+      <button class="exdel" type="button" style="flex:0 0 auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:8px;width:42px;height:48px">✕</button>`;
+    r.querySelector(".exdel").onclick = () => r.remove();
+    $("#exList").appendChild(r);
+  }
+  addExRow(); addExRow(); addExRow();
+  $("#addEx").onclick = () => addExRow();
+  $("#wtype").onchange = (e) => {
+    wtype = e.target.value;
     $("#durWrap").style.display = wtype === "amrap" ? "block" : "none";
-  });
+    $("#exWrap").style.display = wtype === "amrap_stations" ? "block" : "none";
+  };
   $("#post").onclick = async () => {
     const we = $("#we"); we.textContent = ""; store.admin = $("#ac").value.trim();
     const body = { adminCode: store.admin, title: $("#wtitle").value.trim(),
       description: $("#wdesc").value.trim(), scoring_type: wtype, createdBy: me.name_label };
     if (!body.title) return we.textContent = "Geef een titel.";
-    if (wtype === "amrap"){ const min = parseFloat($("#wdur").value); if (!min || min <= 0) return we.textContent = ERR.bad_duration;
-      body.duration_secs = Math.round(min * 60); }
+    if (wtype === "amrap"){
+      const min = parseFloat($("#wdur").value); if (!min || min <= 0) return we.textContent = ERR.bad_duration;
+      body.duration_secs = Math.round(min * 60);
+    } else if (wtype === "amrap_stations"){
+      const exercises = [];
+      $("#exList").querySelectorAll(".exrow").forEach(r => {
+        const name = r.querySelector(".exn").value.trim();
+        const min = parseFloat(r.querySelector(".exm").value);
+        if (name && min > 0) exercises.push({ name, capSecs: Math.round(min * 60) });
+      });
+      if (!exercises.length) return we.textContent = "Voeg minstens één oefening met een tijd toe.";
+      body.exercises = exercises;
+    }
     try { await api("/api/workouts", { method: "POST", body }); toast("Workout geplaatst ✓"); go("home"); }
     catch (e){ we.textContent = msg(e.code); }
   };
