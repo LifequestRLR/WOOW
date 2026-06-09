@@ -128,7 +128,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.3.2";
+const APP_VERSION = "1.3.3";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -707,8 +707,32 @@ async function boot(){
   catch (e){ if (e.code === "network"){ toast(ERR.network, true); return viewGate(); } logoutLocal(); }
 }
 
+/* ---- Naadloze auto-update ---- */
+let _reloading = false, _lastCheck = 0;
+function _doReload(){ if (_reloading || timer) return; _reloading = true; location.reload(); }
+async function checkForUpdate(){
+  const t = Date.now();
+  if (t - _lastCheck < 15000) return;        // niet vaker dan om de 15s checken
+  _lastCheck = t;
+  try {
+    const res = await fetch("index.html?cb=" + t, { cache: "no-store" });
+    if (!res.ok) return;
+    const m = (await res.text()).match(/APP_VERSION\s*=\s*["']([^"']+)["']/);
+    if (m && m[1] && m[1] !== APP_VERSION) _doReload();
+  } catch (_){}
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
+window.addEventListener("focus", checkForUpdate);
+
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) _doReload(); });
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+      reg.update().catch(() => {});
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+    }).catch(() => {});
+  });
 }
 boot();
 </script>
