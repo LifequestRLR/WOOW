@@ -128,7 +128,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.2.4";
+const APP_VERSION = "1.3";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -503,20 +503,27 @@ function amrapLogger(box, w, startedAt, serverNow){
 
 /* ---------- BOARD (leaderboard + filters) ---------- */
 const filters = { sex: "", age: "", weightClass: "" };
+let boardWorkoutId = null;   // null = de actieve workout
 async function viewBoard(app){
   setHTML(app, `<div class="wrap"><div class="empty">Laden…</div></div>`);
-  let cur;
-  try { cur = await api("/api/workouts/current"); }
+  let list;
+  try { list = await api("/api/workouts"); }
   catch (e){ if (e.code === "unauthorized") return logoutLocal(); return setHTML(app, `<div class="wrap"><div class="empty">${msg(e.code)}</div></div>`); }
-  if (!cur.workout) return setHTML(app, `<div class="wrap"><div class="empty">Nog geen workout om te ranken.</div></div>`);
-  const w = cur.workout;
+  const workouts = list.workouts || [];
+  if (!workouts.length) return setHTML(app, `<div class="wrap"><div class="empty">Nog geen workout om te ranken.</div></div>`);
+  const w = workouts.find(x => x.id === boardWorkoutId) || workouts.find(x => x.is_active) || workouts[0];
+  boardWorkoutId = w.id;
 
   const chip = (group, val, label) =>
     `<button class="chip ${filters[group] === val ? "on" : ""}" data-g="${group}" data-v="${val}">${label}</button>`;
+  const opts = workouts.map(x =>
+    `<option value="${x.id}" ${x.id === w.id ? "selected" : ""}>${escapeHtml(x.title)}${x.is_active ? " — deze week" : ""}</option>`).join("");
+
   setHTML(app, `<div class="wrap">
-    <div class="hero" style="padding:8px 0 14px"><div class="k">Klassement</div>
+    <div class="hero" style="padding:8px 0 12px"><div class="k">Klassement</div>
       <h1 style="font-size:30px">${escapeHtml(w.title)}</h1></div>
-    <div class="card" style="padding:14px">
+    <div class="field"><label>Week</label><select id="wsel">${opts}</select></div>
+    <div class="card" style="padding:14px;margin-top:14px">
       <label>Geslacht</label><div class="chips">
         ${chip("sex","","Iedereen")}${chip("sex","M","Mannen")}${chip("sex","F","Vrouwen")}</div>
       <div style="height:12px"></div>
@@ -526,32 +533,49 @@ async function viewBoard(app){
       <label>Gewichtsklasse</label><div class="chips">
         ${chip("weightClass","","Alle")}${WCLASS_ORDER.map(k => chip("weightClass",k,WCLASS[k])).join("")}</div>
     </div>
-    <div class="card" id="lb" style="padding:8px 14px"><div class="empty">Laden…</div></div>
+    <div id="podium"></div>
+    <div class="card" id="lb" style="padding:8px 14px;margin-top:14px"><div class="empty">Laden…</div></div>
   </div>`);
+  $("#wsel").onchange = (e) => { boardWorkoutId = e.target.value; viewBoard(app); };
   app.querySelectorAll(".chip").forEach(c => c.onclick = () => {
     filters[c.dataset.g] = c.dataset.v; viewBoard(app);
   });
   loadBoard(w);
+}
+function lbRowHTML(row, w){
+  const tags = [SEX[row.sex], AGE[row.age_bracket], row.weight_class ? WCLASS[row.weight_class] : null]
+    .filter(Boolean).join(" · ");
+  return `<div class="lbrow r${row.rank} ${row.is_me ? "me" : ""}">
+    <div class="rk num">${row.rank}</div>
+    <div class="who"><div class="nm">${escapeHtml(row.name_label)}</div>
+      <div class="tg">${tags}${row.edited ? " · (aangepast)" : ""}</div></div>
+    <div class="sc num">${fmtScore(row.score, w.scoring_type)}</div></div>`;
+}
+function podiumHTML(top, w){
+  const slot = (row, place) => row
+    ? `<div class="pod pod${place} ${row.is_me ? "me" : ""}">
+         <div class="rk">${place}</div>
+         <div class="pname">${escapeHtml(row.name_label)}</div>
+         <div class="psc">${fmtScore(row.score, w.scoring_type)}</div></div>`
+    : `<div class="pod pod${place}" style="visibility:hidden"></div>`;
+  return `<div class="podium">${slot(top[1],2)}${slot(top[0],1)}${slot(top[2],3)}</div>`;
 }
 async function loadBoard(w){
   const qs = new URLSearchParams({ workoutId: w.id });
   if (filters.sex) qs.set("sex", filters.sex);
   if (filters.age) qs.set("age", filters.age);
   if (filters.weightClass) qs.set("weightClass", filters.weightClass);
+  const pod = $("#podium"), box = $("#lb");
   try {
     const r = await api("/api/leaderboard?" + qs.toString());
-    const box = $("#lb"); if (!box) return;
-    if (!r.rows.length){ box.innerHTML = `<div class="empty">Nog geen scores in deze selectie.</div>`; return; }
-    box.innerHTML = r.rows.map(row => {
-      const tags = [SEX[row.sex], AGE[row.age_bracket], row.weight_class ? WCLASS[row.weight_class] : null]
-        .filter(Boolean).join(" · ");
-      return `<div class="lbrow r${row.rank} ${row.is_me ? "me" : ""}">
-        <div class="rk num">${row.rank}</div>
-        <div class="who"><div class="nm">${escapeHtml(row.name_label)}</div>
-          <div class="tg">${tags}${row.edited ? " · (aangepast)" : ""}</div></div>
-        <div class="sc num">${fmtScore(row.score, w.scoring_type)}</div></div>`;
-    }).join("");
-  } catch (e){ const box = $("#lb"); if (box) box.innerHTML = `<div class="empty">${msg(e.code)}</div>`; }
+    if (!box) return;
+    const rows = r.rows || [];
+    if (!rows.length){ if (pod) pod.innerHTML = ""; box.innerHTML = `<div class="empty">Nog geen scores in deze selectie.</div>`; return; }
+    if (pod) pod.innerHTML = podiumHTML(rows.slice(0, 3), w);
+    const rest = rows.slice(3);
+    if (!rest.length){ box.style.display = "none"; }
+    else { box.style.display = ""; box.innerHTML = rest.map(row => lbRowHTML(row, w)).join(""); }
+  } catch (e){ if (pod) pod.innerHTML = ""; if (box) box.innerHTML = `<div class="empty">${msg(e.code)}</div>`; }
 }
 
 /* ---------- PROFILE ---------- */
