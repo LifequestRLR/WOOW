@@ -135,7 +135,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.4.1";
+const APP_VERSION = "1.4.2";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -545,9 +545,9 @@ async function viewBoard(app){
     </div>` : "";
 
   setHTML(app, `<div class="wrap">
-    <div id="champ"></div>
     <div class="hero" style="padding:8px 0 12px"><div class="k">Klassement</div>
       <h1 style="font-size:30px">${escapeHtml(w.title)}</h1></div>
+    <div id="champ"></div>
     <div class="field"><label>Week</label><select id="wsel">${opts}</select></div>
     <div class="filterbar">
       <button class="filterbtn ${anyFilter ? "active" : ""}" id="ftoggle">Filters${anyFilter ? " · " + summary : ""} ${filtersOpen ? "▴" : "▾"}</button>
@@ -575,7 +575,7 @@ async function loadChampion(){
     const rec = (r.longest && r.longest.n > 1)
       ? ` · langste reeks ${escapeHtml(r.longest.name_label)} (${r.longest.n})` : "";
     box.innerHTML = `<div class="champ">
-      <div class="ctag">Kampioen</div>
+      <div class="ctag">Champion</div>
       <div class="cname">${escapeHtml(c.name_label)}</div>
       <div class="csub">${c.streak} ${c.streak === 1 ? "week" : "weken"} op rij${rec}</div>
     </div>`;
