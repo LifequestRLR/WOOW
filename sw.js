@@ -1,6 +1,6 @@
 // MMA 141 WOTW — service worker (app-shell cache)
 // Bump CACHE when you change the shell so clients pick up the new version.
-const CACHE = "woow-shell-v6";
+const CACHE = "woow-shell-v7";
 const SHELL = [
   "./",
   "./index.html",
