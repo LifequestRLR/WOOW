@@ -135,7 +135,7 @@
    e.g. "https://wotw-api.bilal.workers.dev"
    ============================================================ */
 const API_BASE = "https://woow.loukili-bilal.workers.dev";
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 
 /* ---- Dutch strings & label maps ---- */
 const SEX = { M: "Man", F: "Vrouw" };
@@ -580,6 +580,7 @@ function stationsLogger(box, w, startedAt, serverNow, exs){
 const filters = { sex: "", age: "", weightClass: "" };
 let boardWorkoutId = null;   // null = de actieve workout
 let filtersOpen = false;     // filters standaard ingeklapt
+let boardMetric = "total";   // 'total' of een oefening-index (per-oefening ranglijst)
 async function viewBoard(app){
   setHTML(app, `<div class="wrap"><div class="empty">Laden…</div></div>`);
   let list;
@@ -611,6 +612,16 @@ async function viewBoard(app){
         ${chip("weightClass","","Alle")}${WCLASS_ORDER.map(k => chip("weightClass",k,WCLASS[k])).join("")}</div>
     </div>` : "";
 
+  const isStations = w.scoring_type === "amrap_stations";
+  let exs = [];
+  if (isStations && w.exercises){ try { exs = JSON.parse(w.exercises); } catch (_){} }
+  if (!isStations || (typeof boardMetric === "number" && !exs[boardMetric])) boardMetric = "total";
+  const metricBar = (isStations && exs.length) ? `
+    <div class="chips" style="margin-top:12px">
+      <button class="chip ${boardMetric === "total" ? "on" : ""}" data-metric="total">Totaal</button>
+      ${exs.map((e, i) => `<button class="chip ${boardMetric === i ? "on" : ""}" data-metric="${i}">${escapeHtml(e.name)}</button>`).join("")}
+    </div>` : "";
+
   setHTML(app, `<div class="wrap">
     <div class="hero" style="padding:8px 0 12px"><div class="k">Klassement</div>
       <h1 style="font-size:30px">${escapeHtml(w.title)}</h1></div>
@@ -621,16 +632,20 @@ async function viewBoard(app){
       ${anyFilter ? `<button class="filterbtn" id="fclear">Wis</button>` : ""}
     </div>
     ${filterCard}
+    ${metricBar}
     <div id="podium" style="margin-top:14px"></div>
     <div class="card" id="lb" style="padding:8px 14px;margin-top:14px"><div class="empty">Laden…</div></div>
   </div>`);
-  $("#wsel").onchange = (e) => { boardWorkoutId = e.target.value; viewBoard(app); };
+  $("#wsel").onchange = (e) => { boardWorkoutId = e.target.value; boardMetric = "total"; viewBoard(app); };
   $("#ftoggle").onclick = () => { filtersOpen = !filtersOpen; viewBoard(app); };
   const fc = $("#fclear"); if (fc) fc.onclick = () => { filters.sex = filters.age = filters.weightClass = ""; viewBoard(app); };
-  app.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+  app.querySelectorAll(".chip[data-g]").forEach(c => c.onclick = () => {
     filters[c.dataset.g] = c.dataset.v; viewBoard(app);
   });
-  loadBoard(w);
+  app.querySelectorAll(".chip[data-metric]").forEach(c => c.onclick = () => {
+    boardMetric = c.dataset.metric === "total" ? "total" : parseInt(c.dataset.metric, 10); viewBoard(app);
+  });
+  loadBoard(w, exs);
   loadChampion();
 }
 async function loadChampion(){
@@ -648,25 +663,25 @@ async function loadChampion(){
     </div>`;
   } catch (_){ box.innerHTML = ""; }
 }
-function lbRowHTML(row, w){
+function lbRowHTML(row){
   const tags = [SEX[row.sex], AGE[row.age_bracket], row.weight_class ? WCLASS[row.weight_class] : null]
     .filter(Boolean).join(" · ");
   return `<div class="lbrow r${row.rank} ${row.is_me ? "me" : ""}">
     <div class="rk num">${row.rank}</div>
     <div class="who"><div class="nm">${escapeHtml(row.name_label)}</div>
       <div class="tg">${tags}${row.edited ? " · (aangepast)" : ""}</div></div>
-    <div class="sc num">${fmtScore(row.score, w.scoring_type)}</div></div>`;
+    <div class="sc num">${row.disp}</div></div>`;
 }
-function podiumHTML(top, w){
+function podiumHTML(top){
   const slot = (row, place) => row
     ? `<div class="pod pod${place} ${row.is_me ? "me" : ""}">
          <div class="rk">${place}</div>
          <div class="pname">${escapeHtml(row.name_label)}</div>
-         <div class="psc">${fmtScore(row.score, w.scoring_type)}</div></div>`
+         <div class="psc">${row.disp}</div></div>`
     : `<div class="pod pod${place}" style="visibility:hidden"></div>`;
   return `<div class="podium">${slot(top[1],2)}${slot(top[0],1)}${slot(top[2],3)}</div>`;
 }
-async function loadBoard(w){
+async function loadBoard(w, exs){
   const qs = new URLSearchParams({ workoutId: w.id });
   if (filters.sex) qs.set("sex", filters.sex);
   if (filters.age) qs.set("age", filters.age);
@@ -675,12 +690,24 @@ async function loadBoard(w){
   try {
     const r = await api("/api/leaderboard?" + qs.toString());
     if (!box) return;
-    const rows = r.rows || [];
+    let rows = r.rows || [];
     if (!rows.length){ if (pod) pod.innerHTML = ""; box.innerHTML = `<div class="empty">Nog geen scores in deze selectie.</div>`; return; }
-    if (pod) pod.innerHTML = podiumHTML(rows.slice(0, 3), w);
+
+    const byEx = (typeof boardMetric === "number" && exs && exs[boardMetric]);
+    if (byEx){
+      const idx = boardMetric;
+      const val = (row) => (row.detail && row.detail[idx] != null) ? row.detail[idx] : 0;
+      rows = rows.slice().sort((a, b) => val(b) - val(a) || a.logged_at - b.logged_at);
+      rows.forEach((row, i) => { row.rank = i + 1; });
+    }
+    rows.forEach((row) => {
+      row.disp = byEx ? (((row.detail && row.detail[boardMetric]) || 0) + " reps") : fmtScore(row.score, w.scoring_type);
+    });
+
+    if (pod) pod.innerHTML = podiumHTML(rows.slice(0, 3));
     const rest = rows.slice(3);
     if (!rest.length){ box.style.display = "none"; }
-    else { box.style.display = ""; box.innerHTML = rest.map(row => lbRowHTML(row, w)).join(""); }
+    else { box.style.display = ""; box.innerHTML = rest.map((row) => lbRowHTML(row)).join(""); }
   } catch (e){ if (pod) pod.innerHTML = ""; if (box) box.innerHTML = `<div class="empty">${msg(e.code)}</div>`; }
 }
 
